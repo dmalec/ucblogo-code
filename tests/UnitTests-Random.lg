@@ -49,7 +49,6 @@ end
 
 to Tests.Random.RandomNumDyadic
   Make "Num3 (Random 3 5)
-  OUTPUT (AND [(Random -1 -1) = -1]
-              [GreaterEqual? :num3 3]
+  OUTPUT (AND [GreaterEqual? :num3 3]
               [LessEqual? :num3 5])
 end
