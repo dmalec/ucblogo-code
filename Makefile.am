@@ -155,3 +155,17 @@ ucblogo.dmg : mac docs/ucblogo.pdf
 	cp docs/ucblogo.pdf /Volumes/UCBLogo/UCBLogoUserManual.pdf
 	hdiutil detach /Volumes/UCBLogo/
 	hdiutil convert ucblogo_base.dmg -format UDZO -o ucblogo.dmg
+
+ucblogo.zip : ucblogo
+	mkdir -p UCBLogo
+	cp -f LICENSE UCBLogo/
+	cp -f README.md UCBLogo/README.txt
+	mkdir -p UCBLogo/source
+	cp -f *.[ch] UCBLogo/source
+	mkdir -p UCBLogo/csls
+	cp csls/[a-z]* UCBLogo/csls
+	cp -r helpfiles UCBLogo/
+	cp -r logolib UCBLogo/
+	cp docs/ucblogo.pdf UCBLogo/ucblogo.pdf
+	cp ucblogo.exe UCBLogo/
+	zip -r ucblogo.zip UCBLogo

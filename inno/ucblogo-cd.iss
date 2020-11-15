@@ -17,7 +17,7 @@ DisableStartupPrompt=yes
 DisableProgramGroupPage=yes
 AllowNoIcons=yes
 WindowStartMaximized=no
-LicenseFile=..\LICENSE
+LicenseFile=LICENSE
 PrivilegesRequiredOverridesAllowed=dialog commandline
 
 [Components]
@@ -34,15 +34,15 @@ Name: "quicklaunchicon"; Description: "Create a &Quick Launch icon"; GroupDescri
 
 
 [Files]
-Source: "C:\ucblogo\bin\ucblogo.exe"; DestDir: "{app}"; CopyMode: alwaysoverwrite; Components: program
+Source: "ucblogo.exe"; DestDir: "{app}"; CopyMode: alwaysoverwrite; Components: program
 ; Source: "C:\ucblogo\bin\*.dll"; DestDir: "{app}"; CopyMode: alwaysoverwrite; Components: program
-Source: "C:\UCBLOGO\lib\logo\CSLS\*.*"; DestDir: "{app}\CSLS"; CopyMode: alwaysoverwrite; Components: csls
-Source: "C:\UCBLOGO\lib\logo\HELPFILES\*.*"; DestDir: "{app}\HELPFILE"; CopyMode: alwaysoverwrite; Components: help
-Source: "C:\UCBLOGO\lib\logo\LOGOLIB\*.*"; DestDir: "{app}\LOGOLIB"; CopyMode: alwaysoverwrite; Components: program
-Source: "C:\UCBLOGO\lib\logo\LICENSE"; DestDir: "{app}"; CopyMode: alwaysoverwrite; Components: program
-Source: "C:\UCBLOGO\lib\logo\README.txt"; DestDir: "{app}"; CopyMode: alwaysoverwrite; Components: program
-Source: "C:\UCBLOGO\lib\logo\usermanual.pdf"; DestDir: "{app}\DOCS"; CopyMode: alwaysoverwrite; Components: pdf
-Source: "C:\UCBLOGO\lib\logo\SOURCE\*.*"; DestDir: "{app}\SOURCE"; CopyMode: alwaysoverwrite; Components: source
+Source: "CSLS\*.*"; DestDir: "{app}\CSLS"; CopyMode: alwaysoverwrite; Components: csls
+Source: "HELPFILES\*.*"; DestDir: "{app}\HELPFILE"; CopyMode: alwaysoverwrite; Components: help
+Source: "LOGOLIB\*.*"; DestDir: "{app}\LOGOLIB"; CopyMode: alwaysoverwrite; Components: program
+Source: "LICENSE"; DestDir: "{app}"; CopyMode: alwaysoverwrite; Components: program
+Source: "README.txt"; DestDir: "{app}"; CopyMode: alwaysoverwrite; Components: program
+Source: "usermanual.pdf"; DestDir: "{app}\DOCS"; CopyMode: alwaysoverwrite; Components: pdf
+Source: "SOURCE\*.*"; DestDir: "{app}\SOURCE"; CopyMode: alwaysoverwrite; Components: source
 
 [Icons]
 Name: "{group}\Berkeley Logo"; Filename: "{app}\ucblogo.exe"; WorkingDir: "{app}"; Tasks: programmenu
