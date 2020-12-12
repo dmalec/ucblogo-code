@@ -1,13 +1,13 @@
 name: CI
 
 on:
-#  push:
-#    branches:
-#    - integration
+  push:
+    branches:
+    - master
 
   pull_request:
     branches:
-    - integration
+    - master
 
 jobs:
   build_and_test:
