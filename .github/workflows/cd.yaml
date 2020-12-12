@@ -249,12 +249,6 @@ jobs:
         ./configure --enable-gitid --disable-docs --with-wx-config=$WX_CONFIG_FILE
         make -j2
         strip -s -R .comment -R .gnu.version --strip-unneeded ucblogo.exe
-        make ucblogo.zip
-    - name: Archive ucblogo.zip
-      uses: actions/upload-artifact@v2
-      with:
-        name: ucblogo.zip
-        path: ucblogo.zip
     - name: Stage Inno Dist
       shell: msys2 {0}
       run: |
