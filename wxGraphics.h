@@ -36,6 +36,7 @@ extern int wxGetClickX();
 extern int wxGetClickY();
 extern int wxGetButton();
 extern int wxGetLastButton();
+extern void wxTone(int pitch, int duration);
 extern void doFilled(int fillcolor, int count, struct mypoint *points);
 
 #define SCREEN_WIDTH		1
@@ -163,7 +164,7 @@ extern void doFilled(int fillcolor, int count, struct mypoint *points);
 
 #define label(s)                 wxLabel(s)
 
-#define tone(p,d)                nop()
+#define tone(p,d)                wxTone(p, d)
 #define get_pen_pattern(p)       nop()
 #define set_pen_pattern(p)       nop()
 #define set_list_pen_pattern(p)  nop()

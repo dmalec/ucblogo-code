@@ -2,9 +2,11 @@
 #include "config.h"
 #endif
 
+#include <math.h>
 #include <stdio.h>
 #include "wxTurtleGraphics.h"
 #include "TextEditor.h"
+#include <wx/sound.h>
 #include <wx/stdpaths.h>
 #define WX_TURTLEGRAPHICS_CPP 1
 
@@ -1162,6 +1164,73 @@ extern "C" void wxLabel(char * string) {
 	delete dc;	
 #endif
     }
+}
+
+/*
+ * WAVE format as documented here:
+ * - http://soundfile.sapp.org/doc/WaveFormat/
+ */
+const unsigned char WAVE_HEADER[] = {
+  0x52, 0x49, 0x46, 0x46,   // ASCII "RIFF"
+  0x00, 0x00, 0x00, 0x00,   // Chunk size in bytes: filled in dynamically
+  0x57, 0x41, 0x56, 0x45,   // ASCII "WAVE"
+  0x66, 0x6d, 0x74, 0x20,   // ASCII "fmt "
+  0x10, 0x00, 0x00, 0x00,   // Sub-chunk size in bytes: 16
+  0x01, 0x00,               // Audio format: PCM is 1
+  0x01, 0x00,               // Channels: 1
+  0x80, 0x3E, 0x00, 0x00,   // Sample Rate: 16,000
+  0x80, 0x3E, 0x00, 0x00,   // Byte Rate: 16,000
+  0x01, 0x00,               // Block Align: 1
+  0x08, 0x00,               // Bits / Sample: 8
+  0x64, 0x61, 0x74, 0x61,   // ASCII "data"
+  0x00, 0x00, 0x00, 0x00    // Sub-chunk size in bytes: filled in dynamically
+};
+
+#define WAVE_CHUNK_SIZE_OFFSET 4
+#define WAVE_SUBCHUNK_SIZE_OFFSET 40
+
+/*
+ * Use a sine wave to generate tone data in WAVE format.
+ */
+extern "C" void wxTone(int pitch, int duration) {
+  long subchunk_size = (long)((double)duration / (double)1000 * (double)16000);
+  long chunk_size = subchunk_size + 36;
+  long total_size = chunk_size + 8;
+
+  unsigned char *data = (unsigned char *)malloc(total_size);
+  memcpy(data, WAVE_HEADER, sizeof(WAVE_HEADER));
+
+  // Populate chunk size in little endian
+  for (int i=0; i<4; i++) {
+    data[WAVE_CHUNK_SIZE_OFFSET + i] = (unsigned char)((chunk_size >> (i * 8)) & 0xFF);
+  }
+
+  // Populate data sub-chunk size in little endian
+  for (int i=0; i<4; i++) {
+    data[WAVE_SUBCHUNK_SIZE_OFFSET + i] = (unsigned char)((subchunk_size >> (i * 8)) & 0xFF);
+  }
+
+  // Generate tone data using a sine wave
+  for (long i=0; i<subchunk_size; i++) {
+    double t = (double) i / (double)16000;
+    double f = sin((double)pitch * t * 2 * M_PI);
+
+    data[sizeof(WAVE_HEADER) + i] = (unsigned char)(f * 255);
+  }
+
+  // Play sound using wxWidgets
+  wxSound* const sound = new wxSound;
+  if (sound->Create(total_size, data)) {
+    if (!sound->Play(wxSOUND_SYNC)) {
+      printf("PROBLEM PLAYING\n"); fflush(stdout);
+    }
+  } else {
+    printf("PROBLEM CREATING\n"); fflush(stdout);
+  }
+
+  // Cleanup
+  delete sound;
+  free(data);
 }
 
 
