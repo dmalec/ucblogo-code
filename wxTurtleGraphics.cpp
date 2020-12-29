@@ -1220,7 +1220,27 @@ extern "C" void wxTone(int pitch, int duration) {
 
   // Play sound using wxWidgets
   wxSound* const sound = new wxSound;
-  if (sound->Create(total_size, data)) {
+  bool createStatus;
+
+#ifdef mac
+  // Store to file on mac since memory data is not implemented.
+  //char tmp_filename[L_tmpnam];
+  //tmpnam(tmp_filename);
+  char tmp_filename[] = "./temp.wav";
+  printf("PLAY SOUND FROM FILE: %s\n", tmp_filename);
+
+  FILE *tone_file = fopen(tmp_filename, "wb");
+  fwrite(data, sizeof(unsigned char), total_size, tone_file);
+  fclose(tone_file);
+
+  wxString tone_filename = wxString::FromUTF8(tmp_filename);
+  createStatus = sound->Create(tone_filename, true);
+#else
+  createStatus = sound->Create(total_size, data);
+  printf("PLAY SOUND FROM MEMORY\n");
+#endif // mac
+
+  if (createStatus) {
     if (!sound->Play(wxSOUND_SYNC)) {
       printf("PROBLEM PLAYING\n"); fflush(stdout);
     }
