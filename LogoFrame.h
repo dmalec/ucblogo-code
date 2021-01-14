@@ -8,9 +8,17 @@
 class LogoApplication : public wxApp
 {
   public:
-	virtual bool OnInit();
-	virtual int OnExit();
-        virtual int OnRun();	
+        LogoApplication() {
+          m_noWindowSystem = false;
+        }
+
+  virtual void OnInitCmdLine(wxCmdLineParser& parser);
+  virtual bool OnCmdLineParsed(wxCmdLineParser& parser);
+  virtual int OnRun();
+  virtual int OnExit();
+
+private:
+  bool m_noWindowSystem;
 };
 
 // This is the Event Manager for the logo application

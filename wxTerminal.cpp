@@ -31,6 +31,8 @@ CONTAINED IN #IF 0 BLOCKS:
     #include "wx/wx.h"
 #endif
 
+#include "wx/cmdline.h"
+
 #include <wx/timer.h>
 extern std::string pathString;
 #include <wx/stdpaths.h>
@@ -204,8 +206,29 @@ char *new_c_string_from_wx_string(wxString wxStr) {
 // ----------------------------------------------------------------------------
 
 
-bool LogoApplication::OnInit()
+void LogoApplication::OnInitCmdLine(wxCmdLineParser& parser)
 {
+    wxAppConsole::OnInitCmdLine(parser);
+
+    parser.AddSwitch("nw", "no-window-system", "Do not open a GUI");
+}
+
+bool LogoApplication::OnCmdLineParsed(wxCmdLineParser& parser)
+{
+    m_noWindowSystem = parser.FoundSwitch("no-window-system") == wxCMD_SWITCH_ON;
+
+    return wxAppConsole::OnCmdLineParsed(parser);
+}
+
+
+extern "C" int start (int, char **);
+
+
+int LogoApplication::OnRun()
+{
+  if (m_noWindowSystem) {
+    wxPrintf("Hello World\n");
+  } else {
   // capture the original working directory for any later relative file loads
   originalWorkingDir = wxGetCwd();
 
@@ -220,15 +243,7 @@ bool LogoApplication::OnInit()
 #endif
 
   logoEventManager = new LogoEventManager(this);
-
-  return TRUE;	
-}
-
-extern "C" int start (int, char **);
-
-
-int LogoApplication::OnRun()
-{
+ 
   wxEventLoop::SetActive(m_mainLoop);
   //SetExitOnFrameDelete(true);
 
@@ -274,7 +289,8 @@ int LogoApplication::OnRun()
     free(argv[i]);
   }
   free(argv);
-
+  }
+  
   return 0;
 }
 
