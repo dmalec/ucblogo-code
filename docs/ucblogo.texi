@@ -1,7 +1,7 @@
 \input texinfo @c -*-texinfo-*-
 @c %**start of header
 @setfilename ucblogo.info
-@settitle BERKELEY LOGO 6.1
+@settitle BERKELEY LOGO 6.2
 @setchapternewpage odd
 @c %**end of header
 
@@ -24,7 +24,7 @@
 @finalout
 
 @titlepage
-@title BERKELEY LOGO 6.1
+@title BERKELEY LOGO 6.2
 @subtitle Berkeley Logo User Manual
 @author Brian Harvey
 @end titlepage
@@ -1488,7 +1488,7 @@ in this manual.  So workspace operations such as @code{pots} or
 object.
 
 The initial current object is called @code{logo}; there is an operation
-that outputs that object.  Every object has one or more @var{parents,}
+that outputs that object.  Every object has one or more @var{parents},
 and ultimately the parent of the parent... of an object has to be
 @code{logo}.  The primitive procedures in this manual belong to the
 @code{logo} object, as do global variables.
@@ -1526,7 +1526,7 @@ desired program behavior before they start writing code.  But
 prototyping OOP is the right thing for tinkering, for having a glimmer
 of an idea and playing around with it without a rigid specification.
 So, you want to have dogs in your program.  You start by @var{building a
-dog,} one you can see on the screen as you invent behaviors such as
+dog}, one you can see on the screen as you invent behaviors such as
 @code{roll.over} and @code{wag.tail}.  Then you make a bunch of objects
 with that dog as their parent, using that dog as a prototype.  But the
 prototype dog is still a particular dog, with a particular position,
@@ -1552,6 +1552,11 @@ prototyping OOP language.
 @node    OBJECT CONSTRUCTORS, OBJECT MUTATORS, OBJECTS, OBJECTS
 @section Constructors
 
+@menu
+* KINDOF::
+* SOMETHING::
+* ONEOF::
+@end menu
 
 @node  KINDOF, SOMETHING, OBJECT CONSTRUCTORS, OBJECT CONSTRUCTORS
 @unnumberedsubsec kindof
@@ -2015,8 +2020,8 @@ request of your program or after an instruction prompt).  This buffering
 makes the program much faster than it would be if each character
 appeared immediately, and in most cases the effect is not disconcerting.
 To accommodate programs that do a lot of positioned text display using
-@code{TYPE}, Logo will force printing whenever @code{SETCURSOR} is invoked.  This
-solves most buffering problems.  Still, on occasion you may find it
+@code{TYPE}, Logo will force printing whenever @code{CURSOR} or @code{SETCURSOR} is
+invoked.  This solves most buffering problems.  Still, on occasion you may find it
 necessary to force the buffered characters to be printed explicitly;
 this can be done using the @code{WAIT} command.  @w{@t{WAIT 0}} will force printing
 without actually waiting.
@@ -2330,7 +2335,7 @@ OPENUPDATE filename
 @end example
 
 command.  Opens the named file for reading and writing.  The read and
-write position is initially set to the end of the old file, if any.
+write position is initially set to the end of the old file.
 Note: each open file has only one position, for both reading and
 writing.  If a file opened for update is both @code{READER} and @code{WRITER} at the
 same time, then @code{SETREADPOS} will also affect @code{WRITEPOS} and vice versa.
@@ -2634,7 +2639,7 @@ will be displayed and may be edited until @key{RET} is pressed.
 
 @xref{EOFP} .
 
-@node  CLEARTEXT, SETCURSOR, KEYP, TERMINAL ACCESS
+@node  CLEARTEXT, SETCURSOR, LINEP, TERMINAL ACCESS
 @unnumberedsubsec cleartext
 @cindex cleartext
 @cindex ct
