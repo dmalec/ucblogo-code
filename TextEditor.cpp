@@ -8,9 +8,6 @@
 #include "LogoFrame.h"
 #include "wxGlobals.h"
 #include <wx/clipbrd.h>
-#include <wx/html/htmprint.h>
-#include <wx/print.h>
-#include <wx/printdlg.h>
 #include <wx/msgdlg.h>
 #include <wx/colour.h>
 #include "TextEditor.h"
@@ -246,24 +243,13 @@ void TextEditor::OnSave(){
 	SaveFile(file);
 }
 
-/* Prints out the text in this editor */
-void TextEditor::DoPrint(){
-	
-	if(!wxTerminal::terminal->htmlPrinter)
-		wxTerminal::terminal->htmlPrinter = new wxHtmlEasyPrinting();
-	int fontsizes[] = { 6, 8, 12, 14, 16, 20, 24 };
-	wxTerminal::terminal->htmlPrinter->SetFonts(_T("Courier"),_T("Courier"), fontsizes);
-	wxString textString;
-	textString.Clear();
-	
-	long i;
-	for(i=0;i<GetNumberOfLines();i++){
-		textString.Append(GetLineText(i));
-		textString.Append(_T("<BR>"));
-	}
-	
-	wxTerminal::terminal->htmlPrinter->PrintText(textString);
-	 
-	
-}
+wxString TextEditor::get_text() {
+  wxString text_string;
 
+  for(long i=0; i<GetNumberOfLines(); i++) {
+    text_string.Append(GetLineText(i));
+    text_string.Append(wxT("\n"));
+  }
+
+  return text_string;
+}

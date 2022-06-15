@@ -154,6 +154,7 @@ enum
 	Edit_Menu_File_Close_Reject,
     Edit_Menu_File_Page_Setup,
     Edit_Menu_File_Print_Text,
+    Edit_Menu_File_Print_Text_Prev,
 
 	
 	Edit_Menu_Edit = 800,
@@ -289,6 +290,7 @@ void LogoEventManager::ProcessEvents(int force_yield)
     if(force_yield || foo == 0) {
       if(!inside_yield) {
         inside_yield++;
+        m_logoApp->ProcessIdle();
         m_logoApp->Yield(TRUE);
         inside_yield--;
       }
@@ -327,6 +329,7 @@ EVT_MENU(Edit_Menu_File_Close_Accept,	LogoFrame::OnEditCloseAccept)
 EVT_MENU(Edit_Menu_File_Close_Reject,	LogoFrame::OnEditCloseReject)
 EVT_MENU(Edit_Menu_File_Page_Setup,		TurtleCanvas::OnPageSetup)
 EVT_MENU(Edit_Menu_File_Print_Text,		LogoFrame::OnEditPrint)
+EVT_MENU(Edit_Menu_File_Print_Text_Prev,	LogoFrame::OnEditPrintPrev)
 EVT_MENU(Edit_Menu_Edit_Copy,			LogoFrame::OnEditCopy)
 EVT_MENU(Edit_Menu_Edit_Cut,			LogoFrame::OnEditCut)
 EVT_MENU(Edit_Menu_Edit_Paste,			LogoFrame::OnEditPaste)
@@ -400,6 +403,14 @@ LogoFrame::LogoFrame (const wxChar *title,
   
   wxTerminal::terminal->SetFocus();
   SetUpMenu();
+
+  m_monospace_text_printer = NULL;
+}
+
+LogoFrame::~LogoFrame() {
+  if (m_monospace_text_printer != NULL) {
+    delete m_monospace_text_printer;
+  }
 }
 
 extern "C" int wx_leave_mainloop;
@@ -443,11 +454,11 @@ void LogoFrame::SetUpMenu(){
 	fileMenu->Append( Menu_File_Save, _T("Save Logo Session \tCtrl-S"));
 	fileMenu->Append( Menu_File_Save_As, _T("Save As..."));
 	fileMenu->AppendSeparator();
-	fileMenu->Append( Menu_File_Page_Setup, _T("Page Setup"));
-	fileMenu->Append( Menu_File_Print_Text, _T("Print Text Window"));
+	fileMenu->Append( Menu_File_Page_Setup, _T("Page Setup..."));
+	fileMenu->Append( Menu_File_Print_Text, _T("Print Text Window..."));
 	fileMenu->Append( Menu_File_Print_Text_Prev, _T("Print Preview Text Window"));
-	fileMenu->Append( Menu_File_Print_Turtle, _T("Print Turtle Graphics"));
-	fileMenu->Append( Menu_File_Print_Turtle_Prev, _T("Turtle Graphics Print Preview"));
+	fileMenu->Append( Menu_File_Print_Turtle, _T("Print Turtle Graphics..."));
+	fileMenu->Append( Menu_File_Print_Turtle_Prev, _T("Print Preview Turtle Graphics"));
 	fileMenu->AppendSeparator();
 	fileMenu->Append(wxID_EXIT, _T("Quit UCBLogo \tCtrl-Q"));
 	
@@ -553,32 +564,52 @@ void LogoFrame::OnLoad(wxCommandEvent& WXUNUSED(event)){
     firstloadsave = 0;
 }
 
+void LogoFrame::OnPrintText(wxCommandEvent& WXUNUSED(event)) {
+  wxString text_to_print = wxTerminal::terminal->get_text();
 
-void LogoFrame::OnPrintText(wxCommandEvent& WXUNUSED(event)){
-	wxHtmlEasyPrinting *htmlPrinter=wxTerminal::terminal->htmlPrinter;
-	if(!htmlPrinter){
-		htmlPrinter = new wxHtmlEasyPrinting();
-		int fontsizes[] = { 6, 8, 12, 14, 16, 20, 24 };
-		htmlPrinter->SetFonts(_T("Courier"),_T("Courier"), fontsizes);
-	}
-	wxString *textString = wxTerminal::terminal->get_text();
-	
-	
-	htmlPrinter->PrintText(*textString);	
-	delete textString;
+  PrintMonospacedText(text_to_print, PrintOperation);
 }
 
-void LogoFrame::OnPrintTextPrev(wxCommandEvent& WXUNUSED(event)){
-	wxHtmlEasyPrinting *htmlPrinter=wxTerminal::terminal->htmlPrinter;
-	if(!htmlPrinter){
-		htmlPrinter = new wxHtmlEasyPrinting();
-		int fontsizes[] = { 6, 8, 12, 14, 16, 20, 24 };
-		htmlPrinter->SetFonts(_T("Courier"),_T("Courier"), fontsizes);
-	}
-	wxString *textString = wxTerminal::terminal->get_text();
-	
-	htmlPrinter->PreviewText(*textString,_T(""));
-	
+void LogoFrame::OnPrintTextPrev(wxCommandEvent& WXUNUSED(event)) {
+  wxString text_to_print = wxTerminal::terminal->get_text();
+
+  PrintMonospacedText(text_to_print, PreviewOperation);
+}
+
+void LogoFrame::PrintMonospacedText(wxString source, PrinterOperation operation) {
+  // Lazy init the printer instance.
+  if (m_monospace_text_printer == NULL) {
+    m_monospace_text_printer = new wxHtmlEasyPrinting("", this);
+
+    int fontsizes[] = { 6, 8, 12, 14, 16, 20, 24 };
+    m_monospace_text_printer->SetFonts(_T("Courier"),_T("Courier"), fontsizes);
+  }
+
+  // Prepare the source string for printing.
+  wxString encoded_source_string = source.Clone();
+
+  encoded_source_string.Replace(" ", "&nbsp;");
+  encoded_source_string.Replace("\n", "<BR>\n");
+
+  // Wrap the source string in HTML for printing.
+  wxString html_document_string;
+
+  html_document_string.Append(wxT("<HTML>\n"));
+  html_document_string.Append(wxT("<BODY FONTSIZE='2'>\n"));
+  // The extra BR tag is needed to have the spacing between the first and second lines
+  // the same as the remaining lines.
+  html_document_string.Append(wxT("<CODE><BR>\n"));
+  html_document_string.Append(encoded_source_string);
+  html_document_string.Append(wxT("</CODE>\n"));
+  html_document_string.Append(wxT("</BODY>\n"));
+  html_document_string.Append(wxT("</HTML>\n"));
+
+  // Print or preview the document.
+  if (operation == PreviewOperation) {
+    m_monospace_text_printer->PreviewText(html_document_string);
+  } else {
+    m_monospace_text_printer->PrintText(html_document_string);
+  }
 }
 
 extern "C" void wxSetFont(char *fm, int sz);
@@ -668,9 +699,19 @@ void LogoFrame::OnEditCloseAccept(wxCommandEvent& WXUNUSED(event)){
 void LogoFrame::OnEditCloseReject(wxCommandEvent& WXUNUSED(event)){
 	editWindow->OnCloseReject();
 }
-void LogoFrame::OnEditPrint(wxCommandEvent& WXUNUSED(event)){
-	editWindow->DoPrint();
+
+void LogoFrame::OnEditPrint(wxCommandEvent& WXUNUSED(event)) {
+  wxString text_to_print = editWindow->get_text();
+
+  PrintMonospacedText(text_to_print, PrintOperation);
 }
+
+void LogoFrame::OnEditPrintPrev(wxCommandEvent& WXUNUSED(event)) {
+  wxString text_to_print = editWindow->get_text();
+
+  PrintMonospacedText(text_to_print, PreviewOperation);
+}
+
 void LogoFrame::OnEditCopy(wxCommandEvent& WXUNUSED(event)){
 	editWindow->DoCopy();
 }
@@ -701,6 +742,7 @@ void LogoFrame::SetUpEditMenu(){
 	fileMenu->AppendSeparator();
 	fileMenu->Append( Edit_Menu_File_Page_Setup, _T("Page Setup"));
 	fileMenu->Append( Edit_Menu_File_Print_Text, _T("Print... \tCtrl-P"));
+	fileMenu->Append( Edit_Menu_File_Print_Text_Prev, _T("Print Preview..."));
 	
 	wxMenu *editMenu = new wxMenu;
 	
@@ -812,8 +854,6 @@ extern "C" void color_init(void);
 
   // start us out not in char mode
   logo_input_mode = LogoNormalInputMode;
-  // For printing the text
-  htmlPrinter = 0;
   //  set_mode_flag(DESTRUCTBS);
   wxTerminal::terminal = this;
   int
@@ -837,9 +877,6 @@ extern "C" void color_init(void);
 
   for(i = 0; i < 16; i++)
     m_colorPens[i] = wxPen(m_colors[i], 1, wxSOLID);
-
-  m_printerFN = 0;
-  m_printerName = 0;
 
   wxClientDC
     dc(this);
@@ -2412,97 +2449,9 @@ wxTerminal::PassInputToTerminal(int len, char *data)
   }
 }
 
-wxString * wxTerminal::get_text() 
-{
-  //  int i;
-  wxString *outputString = new wxString();
-  outputString->Clear();
-  outputString->Append(_T("<HTML>\n"));
-  outputString->Append(_T("<BODY>\n"));
-  outputString->Append(_T("<FONT SIZE=2>\n"));
-  wxString txt = GetChars(0,0,x_max,y_max);
-  txt.Replace(_T("\n"),_T("<BR>\n"));
-  outputString->Append(txt);
-  /*
-  wxterm_linepos tlpos = term_lines;
-  for(i=0;i<ymax;i++){
-    outputString->append(textString->Mid(linenumbers[i]*MAXWIDTH),MAXWIDTH);
-    outputString->append(_T("<BR>"));		
-    }*/
-  outputString->Append(_T("<\\FONT>"));
-  outputString->Append(_T("<\\BODY>"));
-  outputString->Append(_T("<\\HTML>"));
-  //  delete textString;
-  return outputString;
+wxString wxTerminal::get_text() {
+  return GetChars(0, 0, x_max, y_max);
 }
-
-
-void
-wxTerminal::SelectPrinter(char *PrinterName)
-{
-  if(m_printerFN)
-  {
-    if(m_printerName[0] == '#')
-      fclose(m_printerFN);
-    else
-#if defined(__WXMSW__)
-      fclose(m_printerFN);
-#else
-      pclose(m_printerFN);
-#endif
-
-    m_printerFN = 0;
-  }
-
-  if(m_printerName)
-  {
-    free(m_printerName);
-    m_printerName = 0;
-  }
-
-  if(strlen(PrinterName))
-  {
-    m_printerName = strdup(PrinterName);
-  }
-}
-
-void
-wxTerminal::PrintChars(int len, char *data)
-{
-  char
-    pname[100];
-
-  if(!m_printerFN)
-  {
-    if(!m_printerName)
-      return;
-
-    if(m_printerName[0] == '#')
-    {
-#if defined(__WXMSW__)
-      sprintf(pname, "lpt%d", m_printerName[1] - '0' + 1);
-#else
-      sprintf(pname, "/dev/lp%d", m_printerName[1] - '0');
-#endif
-      m_printerFN = fopen(pname, "wb");
-    }
-    else
-    {
-#if defined(__WXMSW__)
-      m_printerFN = fopen(m_printerName, "wb");
-#else
-      sprintf(pname, "lpr -P%s", m_printerName);
-      m_printerFN = popen(pname, "w");
-#endif
-    }
-  }
-  
-  if(m_printerFN)
-  {
-    fwrite(data, len, 1, m_printerFN);
-  }
-}
-
 
 
 // ----------------------------------------------------------------------------

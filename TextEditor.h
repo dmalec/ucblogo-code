@@ -12,13 +12,14 @@ public:
 	void DoPaste();
 	void DoCopy();
 	void DoCut();
-	void DoPrint();
 	void OnCloseAccept();
 	void OnCloseReject();
 	bool Load(const wxString& filename);
 	void SetFont(wxFont font);
 	void SetThisFont(wxCommandEvent&);
-	
+
+	wxString get_text();
+
 	int stateFlag;
 	int doSave;
 	

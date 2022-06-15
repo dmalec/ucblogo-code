@@ -4,6 +4,9 @@
 #include <wx/evtloop.h>
 #include "logo.h"
 
+#include <wx/html/htmprint.h>
+#include <wx/print.h>
+
 // This is the Top level Application Class
 class LogoApplication : public wxApp
 {
@@ -24,6 +27,9 @@ class LogoEventManager {
     LogoApplication *m_logoApp;
 };
 
+// Enumeration of printer operations
+enum PrinterOperation { PreviewOperation, PrintOperation };
+
 // This is the Top level frame for logo
 class LogoFrame : public wxFrame
 {
@@ -31,6 +37,7 @@ class LogoFrame : public wxFrame
 	LogoFrame( const wxChar *title,
                 int xpos=50, int ypos=50,
                 int width=900, int height=500);
+	~LogoFrame();
 
         void AdjustSize();
 	void SetUpEditMenu();
@@ -55,6 +62,7 @@ private:
 	void OnEditCloseAccept(wxCommandEvent& WXUNUSED(event));
 	void OnEditCloseReject(wxCommandEvent& WXUNUSED(event));
 	void OnEditPrint(wxCommandEvent& WXUNUSED(event));
+	void OnEditPrintPrev(wxCommandEvent& WXUNUSED(event));
 	void OnEditCopy(wxCommandEvent& WXUNUSED(event));
 	void OnEditCut(wxCommandEvent& WXUNUSED(event));
 	void OnEditFind(wxCommandEvent& WXUNUSED(event));
@@ -64,7 +72,12 @@ private:
 	void OnEditLoad(wxCommandEvent& WXUNUSED(event));
 
         void OnCloseWindow(wxCloseEvent& event);
-	
+
+        void PrintMonospacedText(wxString source, PrinterOperation operation);
+
+        // For printing monospaced text.
+        wxHtmlEasyPrinting *m_monospace_text_printer;
+
 	DECLARE_EVENT_TABLE()
 };
 

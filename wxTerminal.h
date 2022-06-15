@@ -5,9 +5,6 @@
 #pragma interface
 #endif
 
-#include <wx/html/htmprint.h>
-#include <wx/print.h>
-
 #include "wxCommandHistory.h"
 
 #define CURSOR_BLINK_DEFAULT_TIMEOUT	300
@@ -169,12 +166,6 @@ struct wxterm_linepos {
   wxMemoryDC
     m_memDC;
 
-  FILE
-    *m_printerFN;
-
-  char
-    *m_printerName;
-
 
 // character buffer
   wxterm_char_buffer *term_chars;
@@ -234,7 +225,6 @@ public:
 
   virtual ~wxTerminal();
   // For printing the text
-  wxHtmlEasyPrinting *htmlPrinter;
   int 
 	  x_coord,
 	  y_coord,
@@ -284,12 +274,9 @@ public:
   void NextLine();
   virtual void PassInputToTerminal(int len, char *data);
 
-  wxString *get_text();
+  wxString get_text();
 
   void ClearScreen();
-
-  virtual void SelectPrinter(char *PrinterName);
-  virtual void PrintChars(int len, char *data);
 
 
   //TurtleCanvas passes char to here.
