@@ -163,7 +163,9 @@ extern void doFilled(int fillcolor, int count, struct mypoint *points);
 
 #define label(s)                 wxLabel(s)
 
-#define tone(p,d)                nop()
+// Handle tone so that it does not produce compiler warnings
+// about variables being set but not used.
+#define tone(p,d)                { (void)p; (void)d; }
 #define get_pen_pattern(p)       nop()
 #define set_pen_pattern(p)       nop()
 #define set_list_pen_pattern(p)  nop()

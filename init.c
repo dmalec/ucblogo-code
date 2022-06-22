@@ -510,6 +510,7 @@ void init(void) {
     FILE *fp;
     char linebuf[256];
     char *sugar;
+    int chdir_result;
     static char sugarlib[100], sugarhelp[100], sugarcsls[100];
 #ifdef WIN32
     HKEY regKey1, regKey2, regKey3;
@@ -547,8 +548,10 @@ void init(void) {
 	fp = fopen(logolib,"r");
 	if (fp == NULL) goto nosugar;
 	fclose(fp);
-	chdir(getenv("SUGAR_ACTIVITY_ROOT"));
-	chdir("data");
+	chdir_result = chdir(getenv("SUGAR_ACTIVITY_ROOT"));
+	if (chdir_result != 0) goto nosugar;
+	chdir_result = chdir("data");
+	if (chdir_result != 0) goto nosugar;
 	strcpy(sugarhelp,sugar);
 	strcat(sugarhelp,"/helpfiles");
 	helpfiles = sugarhelp;
@@ -707,14 +710,14 @@ nosugar:
 	// check if we are running wxMac
 	newlib = wxMacGetLibloc();
 	if(newlib)
-		logolib = newlib; 
+		logolib = (char *)newlib;
         //if (helpfiles == NULL) helpfiles = wxMacGetHelploc();
                 newcsls = wxMacGetCslsloc();
 	if(newcsls)
-		csls = newcsls;
+		csls = (char *)newcsls;
 	newhelp = wxMacGetHelploc();
         if(newhelp)
-		helpfiles = newhelp;
+		helpfiles = (char *)newhelp;
 #endif
 #endif
 

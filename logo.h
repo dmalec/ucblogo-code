@@ -32,12 +32,13 @@
 
 #define ecma	/* for European extended character set using parity bit */
 
+// Default to signal callback functions having an argument.
+#define SIG_TAKES_ARG
 
 #ifdef WIN32
 #define ibm
 #undef __RZTC__
 #define HAVE_MEMCPY
-#define SIG_TAKES_ARG
 #endif
 
 #ifdef __ZTC__
@@ -58,7 +59,6 @@
 #ifdef __RZTC__
 #define ibm
 #define HAVE_MEMCPY
-#define SIG_TAKES_ARG
 #endif
 
 #ifdef _MSC_VER

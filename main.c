@@ -116,18 +116,28 @@ void logo_pause(int sig)
 void logo_pause()
 #endif
 {
+#ifdef HAVE_SIGPROCMASK
+    sigset_t set;
+#endif
+
     if (inside_gc || in_eval_save) {
 	int_during_gc = 2;
     } else {
 	charmode_off();
 	to_pending = 0;
+
+#ifdef HAVE_SIGPROCMASK
+	sigemptyset(&set);
+	sigprocmask(SIG_SETMASK, &set, 0);
+#else
 #ifdef HAVE_SIGSETMASK
 	sigsetmask(0);
 #else
 #if !defined(mac) && !defined(_MSC_VER)
 	signal(SIGQUIT, logo_pause);
 #endif
-#endif
+#endif // HAVE_SIGSETMASK
+#endif // HAVE_SIGPROCMASK
 	lpause(NIL);
     }
 }

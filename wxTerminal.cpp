@@ -2397,8 +2397,7 @@ wxTerminal::PassInputToTerminal(int len, char *data)
     // if we're not reading an instruction (logo output)
     // old_vis_y keeps track of whether the screen has changed lately
     
-    if((!readingInstruction &&
-	1 ||                     //don't use old_vis_y??
+    if((!readingInstruction ||
 	vis_y != old_vis_y) || 
        cursor_y < vis_y  ||
        cursor_y > vis_y + m_height - 1) {

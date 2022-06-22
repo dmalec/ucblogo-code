@@ -519,7 +519,9 @@ void gc(BOOLEAN no_error) {
     NODE *nd, *tmpnd;
     long int num_freed = 0;
     NODE **tmp_ptr, **prev;
+#ifdef GC_DEBUG
     long int freed_sofar = 0;
+#endif
     NODE** array_ptr;
     NODE* tmp_node;
     NODE *obj, *caselist;
@@ -840,8 +842,8 @@ re_mark:
         clean_oldyoungs();
 #ifdef GC_DEBUG
 	fprintf(DEBUGSTREAM, "%ld + ", num_freed - freed_sofar); fflush(DEBUGSTREAM);
-#endif
 	freed_sofar = num_freed;
+#endif
     }
 
 #ifdef GC_DEBUG

@@ -223,10 +223,10 @@ NODE *binary(NODE *args, char fcn) {
 	     * range 0-45 first */
 	    sign = (fval < 0.0);
 	    if (sign) fval = -fval;
-#ifndef HAVE_DREM
+#ifndef HAVE_REMAINDER
 	    fval = fmod(fval,360.0);
 #else
-	    fval = drem(fval,360.0);
+	    fval = remainder(fval,360.0);
 #endif
 	    if (fval > 180.0) {
 		fval -= 180.0;
