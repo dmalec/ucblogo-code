@@ -9,6 +9,7 @@ on:
 
 env:
   WX_WIDGETS_VERSION: 3.2.2.1
+  LEGACY_OSX_SDK_PROJECT_VERSION: 11.3
   TARGET_OSX_VERSION: 10.14
 
 jobs:
@@ -78,6 +79,57 @@ jobs:
         mkdir build-static
         cd build-static
         ../configure --disable-shared --enable-unicode --with-macosx-version-min=${{ env.TARGET_OSX_VERSION }} --with-libjpeg=builtin --with-libpng=builtin --with-regex=builtin --without-libtiff
+        make -j2
+
+  build_wxwidgets_legacy_osx:
+    name: Build wxWidgets for legacy OSX
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+    - name: Cache wxWidgets
+      uses: actions/cache@v4
+      id: wxwidgets-cache
+      with:
+        path: ${{ runner.temp }}/wxWidgets-${{ env.WX_WIDGETS_VERSION }}
+        key: ${{ runner.os }}-legacy-wxWidgets-${{ env.WX_WIDGETS_VERSION }}
+    - name: Download Legacy SDK
+      if: steps.wxwidgets-cache.outputs.cache-hit != 'true'
+      working-directory: ${{ runner.temp }}
+      run: |
+        mkdir osxsdk-${{ env.TARGET_OSX_VERSION }}
+        cd osxsdk-${{ env.TARGET_OSX_VERSION }}
+        wget -nv https://github.com/phracker/MacOSX-SDKs/releases/download/${{ env.LEGACY_OSX_SDK_PROJECT_VERSION }}/MacOSX${{ env.TARGET_OSX_VERSION }}.sdk.tar.xz
+        sudo tar -zxf MacOSX${{ env.TARGET_OSX_VERSION }}.sdk.tar.xz -C /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/
+    - name: Update Minimum SDK Version
+      if: steps.wxwidgets-cache.outputs.cache-hit != 'true'
+      working-directory: ${{ runner.temp }}
+      run: |
+        cp /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Info.plist ./CompilerInfo.plist
+        plutil -convert xml1 CompilerInfo.plist
+        plutil -replace MinimumSDKVersion -string ${{ env.TARGET_OSX_VERSION }} CompilerInfo.plist
+        plutil -convert binary1 CompilerInfo.plist
+        sudo cp CompilerInfo.plist /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Info.plist
+    - name: Download wxWidgets
+      if: steps.wxwidgets-cache.outputs.cache-hit != 'true'
+      working-directory: ${{ runner.temp }}
+      run: |
+        wget https://github.com/wxWidgets/wxWidgets/releases/download/v${{ env.WX_WIDGETS_VERSION }}/wxWidgets-${{ env.WX_WIDGETS_VERSION }}.tar.bz2
+        tar -xjf wxWidgets-${{ env.WX_WIDGETS_VERSION }}.tar.bz2
+    - name: Build wxwidgets
+      if: steps.wxwidgets-cache.outputs.cache-hit != 'true'
+      working-directory: ${{ runner.temp }}/wxWidgets-${{ env.WX_WIDGETS_VERSION }}
+      env:
+        SDKROOT: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX${{ env.TARGET_OSX_VERSION }}.sdk
+        CC: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang
+        CXX: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++
+        CFLAGS: -arch x86_64
+        CPPFLAGS: -arch x86_64 -I /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/
+        CXXFLAGS: -arch x86_64 -I /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/
+        LDFLAGS: -arch x86_64
+      run: |
+        mkdir build-static
+        cd build-static
+        ../configure --disable-shared --enable-unicode --with-macosx-version-min=${{ env.TARGET_OSX_VERSION }} --with-macosx-sdk=${{ env.SDKROOT }} --host x86_64-apple-darwin --with-libjpeg=builtin --with-libpng=builtin --with-regex=builtin --without-libtiff
         make -j2
 
   build_wxwidgets_windows:
@@ -185,6 +237,25 @@ jobs:
         name: ucblogo.pdf
         path: docs/ucblogo.pdf
 
+#  download_older_sdk_osx:
+#    name: Download Older SDK for OSX
+#    runs-on: macos-latest
+#    timeout-minutes: 10
+#    steps:
+#    - name: Cache OSX SDK
+#      uses: actions/cache@v4
+#      id: osx-sdk-cache
+#      with:
+#        path: ${{ runner.temp }}/osxsdk-${{ env.TARGET_OSX_VERSION }}
+#        key: ${{ runner.os }}-osxsdk-${{ env.TARGET_OSX_VERSION }}
+#    - name: Download SDK
+#      if: steps.osx-sdk-cache.cache-hit != 'true'
+#      working-directory: ${{ runner.temp }}
+#      run: |
+#        mkdir osxsdk-${{ env.TARGET_OSX_VERSION }}
+#        cd osxsdk-${{ env.TARGET_OSX_VERSION }}
+#        wget -q https://github.com/phracker/MacOSX-SDKs/releases/download/${{ env.LEGACY_OSX_SDK_PROJECT_VERSION }}/MacOSX${{ env.TARGET_OSX_VERSION }}.sdk.tar.xz
+
   build_osx:
     name: Build Logo for OSX
     needs: [ build_wxwidgets_osx, build_linux ]
@@ -227,12 +298,88 @@ jobs:
         LDFLAGS: -mmacosx-version-min=${{ env.TARGET_OSX_VERSION }}
       run: |
         autoreconf --install
-        ./configure --enable-gitid --with-wx-config=$WX_CONFIG_PATH
+        ./configure --enable-gitid --host x86_64-apple-darwin --with-wx-config=$WX_CONFIG_PATH
         make -j2 ucblogo.dmg
     - name: Archive ucblogo.dmg
       uses: actions/upload-artifact@v4
       with:
         name: ucblogo.dmg
+        path: ucblogo.dmg
+
+  build_legacy_osx:
+    name: Build Logo for Legacy OSX
+    needs: [ build_wxwidgets_legacy_osx, build_linux ]
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+    - name: Install Dependencies
+      run: >
+        brew install
+        autoconf-archive
+        automake
+    - name: wxWidgets Cache
+      uses: actions/cache@v4
+      id: wxwidgets-cache
+      with:
+        path: ${{ runner.temp }}/wxWidgets-${{ env.WX_WIDGETS_VERSION }}
+        key: ${{ runner.os }}-legacy-wxWidgets-${{ env.WX_WIDGETS_VERSION }}
+    - name: Install wxwidgets
+      # Install wxwidgets from cache on build machine so autoconf has WX_CONFIG_CHECK
+      working-directory: ${{ runner.temp }}/wxWidgets-${{ env.WX_WIDGETS_VERSION }}
+      run: |
+        cd build-static
+        sudo make install
+        sudo cp ../wxwin.m4 /opt/homebrew/share/aclocal/
+    - name: Download SDK
+      working-directory: ${{ runner.temp }}
+      run: |
+        mkdir osxsdk-${{ env.TARGET_OSX_VERSION }}
+        cd osxsdk-${{ env.TARGET_OSX_VERSION }}
+        wget -nv https://github.com/phracker/MacOSX-SDKs/releases/download/${{ env.LEGACY_OSX_SDK_PROJECT_VERSION }}/MacOSX${{ env.TARGET_OSX_VERSION }}.sdk.tar.xz
+        sudo tar -zxf MacOSX${{ env.TARGET_OSX_VERSION }}.sdk.tar.xz -C /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/
+    - name: Update Minimum SDK Version
+      working-directory: ${{ runner.temp }}
+      run: |
+        cp /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Info.plist ./CompilerInfo.plist
+        plutil -convert xml1 CompilerInfo.plist
+        plutil -replace MinimumSDKVersion -string ${{ env.TARGET_OSX_VERSION }} CompilerInfo.plist
+        plutil -convert binary1 CompilerInfo.plist
+        sudo cp CompilerInfo.plist /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Info.plist
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Download PDF manual
+      uses: actions/download-artifact@v4.1.7
+      with:
+        name: ucblogo.pdf
+        path: docs
+    - name: Build Logo
+      env:
+        WX_CONFIG_PATH: ${{ runner.temp }}/wxWidgets-${{ env.WX_WIDGETS_VERSION }}/build-static/wx-config
+        WX_LIB_PATH: ${{ runner.temp }}/wxWidgets-${{ env.WX_WIDGETS_VERSION }}/build-static/lib
+        SDKROOT: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX${{ env.TARGET_OSX_VERSION }}.sdk
+        CC: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang
+        CXX: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++
+        CFLAGS: -mmacosx-version-min=${{ env.TARGET_OSX_VERSION }} -arch x86_64
+        CPPFLAGS: -mmacosx-version-min=${{ env.TARGET_OSX_VERSION }} -arch x86_64 -I /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/
+        CXXFLAGS: -mmacosx-version-min=${{ env.TARGET_OSX_VERSION }} -arch x86_64 -I /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs//MacOSX.sdk/usr/include/c++/v1/
+        LDFLAGS: -mmacosx-version-min=${{ env.TARGET_OSX_VERSION }} -arch x86_64-apple-darwin
+      run: |
+        ln -s ${{ env.WX_LIB_PATH }}/libwx_osx_cocoau_xrc-3.2-x86_64-apple-darwin.a ${{ env.WX_LIB_PATH }}/libwx_osx_cocoau_xrc-3.2.a
+        ln -s ${{ env.WX_LIB_PATH }}/libwx_osx_cocoau_qa-3.2-x86_64-apple-darwin.a ${{ env.WX_LIB_PATH }}/libwx_osx_cocoau_qa-3.2.a
+        ln -s ${{ env.WX_LIB_PATH }}/libwx_baseu_net-3.2-x86_64-apple-darwin.a ${{ env.WX_LIB_PATH }}/libwx_baseu_net-3.2.a
+        ln -s ${{ env.WX_LIB_PATH }}/libwx_osx_cocoau_html-3.2-x86_64-apple-darwin.a ${{ env.WX_LIB_PATH }}/libwx_osx_cocoau_html-3.2.a
+        ln -s ${{ env.WX_LIB_PATH }}/libwx_osx_cocoau_core-3.2-x86_64-apple-darwin.a ${{ env.WX_LIB_PATH }}/libwx_osx_cocoau_core-3.2.a
+        ln -s ${{ env.WX_LIB_PATH }}/libwx_baseu_xml-3.2-x86_64-apple-darwin.a ${{ env.WX_LIB_PATH }}/libwx_baseu_xml-3.2.a
+        ln -s ${{ env.WX_LIB_PATH }}/libwx_baseu-3.2-x86_64-apple-darwin.a ${{ env.WX_LIB_PATH }}/libwx_baseu-3.2.a
+        autoreconf --install
+        ./configure --enable-gitid --with-wx-config=$WX_CONFIG_PATH --host x86_64-apple-darwin
+        make -j2 ucblogo.dmg
+    - name: Archive ucblogo-legacy.dmg
+      uses: actions/upload-artifact@v4
+      with:
+        name: ucblogo-legacy.dmg
         path: ucblogo.dmg
 
   build_windows:
